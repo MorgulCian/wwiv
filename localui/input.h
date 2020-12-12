@@ -634,6 +634,7 @@ public:
   CustomEditItem(CustomEditItem&&) = delete;
   CustomEditItem& operator=(CustomEditItem const&) = delete;
   CustomEditItem& operator=(CustomEditItem&&) = delete;
+  ~CustomEditItem() = default;
 
   EditlineResult Run(CursesWindow* window) override;
   void Display(CursesWindow* window) const override;
@@ -891,7 +892,7 @@ public:
     short old_pair;
     window->AttrGet(&old_attr, &old_pair);
     window->SetColor(SchemeId::EDITLINE);
-    Display(window);
+    window->PutsXY(x_, y_, menu_label());
     window->GotoXY(x_, y_);
     const auto ch = window->GetChar();
     window->AttrSet(COLOR_PAIR(old_pair) | old_attr);

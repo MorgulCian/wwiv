@@ -415,7 +415,7 @@ static void edit_menu(const Config& config, const std::filesystem::path& menu_di
   y++;
   const auto prompt_name = StrCat(menu_name, ".pro");
   auto p = FilePath(menu_path, prompt_name);
-  items.add(new Label("Prompt"), new EditExternalFileItem(p), 1, y);
+  items.add(new Label("Prompt:"), new EditExternalFileItem(p), 1, y);
   items.relayout_items_and_labels();
   items.Run(title);
 
