@@ -15,61 +15,45 @@
 /*    either  express  or implied.  See  the  License for  the specific   */
 /*    language governing permissions and limitations under the License.   */
 /**************************************************************************/
-#include "sdk/value/bbsvalueprovider.h"
+#ifndef INCLUDED_SDK_VALUEPROVIDER_USERVALUEPROVIDER_H
+#define INCLUDED_SDK_VALUEPROVIDER_USERVALUEPROVIDER_H
 
-#include "core/strings.h"
 #include "common/context.h"
-#include "core/version.h"
-#include "fmt/printf.h"
+#include "sdk/chains.h"
+#include "sdk/config.h"
 #include "sdk/user.h"
-#include "sdk/acs/eval_error.h"
-
+#include "sdk/value/value.h"
+#include "sdk/value/valueprovider.h"
 #include <optional>
 #include <string>
 
-using namespace wwiv::core;
-using namespace wwiv::sdk::acs;
-using namespace parser;
-using namespace wwiv::strings;
+namespace wwiv::common::value {
 
-namespace wwiv::sdk::value {
+/**
+ * ValueProvider for "user" record attributes.
+ */
+class UserValueProvider final : public sdk::value::ValueProvider {
+public:
+  /** 
+   * Constructs a new ValueProvider.  'user' must remain valid for 
+   * the duration of this instance lifetime.
+   */
+  UserValueProvider(const sdk::Config& config, const sdk::User& user, int effective_sl, slrec sl);
+  explicit UserValueProvider(Context& c);
+  UserValueProvider(Context& context, int effective_sl);
+  [[nodiscard]] std::optional<sdk::value::Value> value(const std::string& name) const override;
 
-
-/** Shorthand to create an optional Value */
-template <typename T> static std::optional<Value> val(T&& v) {
-  return std::make_optional<Value>(std::forward<T>(v));
-}
-
-BbsValueProvider::BbsValueProvider(const Config& config,  const common::SessionContext& sess)
-  : ValueProvider("bbs"), config_(config), sess_(sess) {
-}
-
-std::optional<Value> BbsValueProvider::value(const std::string& name) const {
-  if (iequals(name, "name")) {
-    return val(config_.system_name());
-  }
-  if (iequals(name, "sysopname")) {
-    return val(config_.sysop_name());
-  }
-  if (iequals(name, "phone")) {
-    return val(config_.system_phone());
-  }
-  if (iequals(name, "node")) {
-    return val(sess_.instance_number());
-  }
-  if (iequals(name, "reg")) {
-    return val(static_cast<int>(config_.wwiv_reg_number()));
-  }
-  if (iequals(name, "os")) {
-    return val(os::os_version_string());
-  }
-  if (iequals(name, "version")) {
-    return val(full_version());
-  }
-  if (iequals(name, "compiletime")) {
-    return val(wwiv_compile_datetime());
-  }
-  throw eval_error(fmt::format("No attribute named 'bbs.{}' exists.", name));
-}
+private:
+  typedef std::function<std::optional<sdk::value::Value>()> makeval_fn;
+  std::map<const std::string, makeval_fn> fns_;
+  const sdk::Config& config_;
+  const sdk::User& user_;
+  int effective_sl_;
+  slrec sl_;
+  std::vector<editorrec> editors_;
+  sdk::Chains chains_;
+};
 
 }
+
+#endif

@@ -21,19 +21,22 @@
 #include "bbs/acs.h"
 #include "bbs/bbs.h"
 #include "bbs/instmsg.h"
-#include "bbs/menus/config_menus.h"
-#include "bbs/menus/menucommands.h"
 #include "bbs/mmkey.h"
 #include "bbs/sysoplog.h"
+#include "bbs/menus/config_menus.h"
+#include "bbs/menus/menucommands.h"
 #include "common/printfile.h"
+#include "common/menus/menu_generator.h"
+#include "common/value/bbsvalueprovider.h"
+#include "common/value/uservalueprovider.h"
 #include "core/strings.h"
 #include "sdk/config.h"
 
 #include <string>
 
 using namespace wwiv::core;
+using namespace wwiv::common::menus;
 using namespace wwiv::strings;
-using namespace wwiv::core;
 using namespace wwiv::sdk::menus;
 
 namespace wwiv::bbs::menus {
@@ -347,7 +350,11 @@ void Menu::GenerateMenu(menu_type_t typ) {
 
 
 std::vector<std::string> Menu::GenerateMenuAsLines(menu_type_t typ) {
-  return GenerateMenuLines(*a()->config(), a()->sess().effective_sl(), menu(), *a()->user(), typ);
+  const common::value::UserValueProvider up(a()->context());
+  const common::value::BbsValueProvider bp(*a()->config(), a()->sess());
+  const std::vector<const wwiv::sdk::value::ValueProvider*> providers{&up, &bp};
+  return GenerateMenuLines(*a()->config(), menu(), *a()->user(),
+                           providers, typ);
 }
 
 

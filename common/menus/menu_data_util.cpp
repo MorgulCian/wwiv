@@ -1,7 +1,7 @@
 /**************************************************************************/
 /*                                                                        */
 /*                              WWIV Version 5.x                          */
-/*             Copyright (C)1998-2021, WWIV Software Services             */
+/*             Copyright (C)2020-2021, WWIV Software Services             */
 /*                                                                        */
 /*    Licensed  under the  Apache License, Version  2.0 (the "License");  */
 /*    you may not use this  file  except in compliance with the License.  */
@@ -14,32 +14,43 @@
 /*    "AS IS"  BASIS, WITHOUT  WARRANTIES  OR  CONDITIONS OF ANY  KIND,   */
 /*    either  express  or implied.  See  the  License for  the specific   */
 /*    language governing permissions and limitations under the License.   */
+/*                                                                        */
 /**************************************************************************/
-#ifndef INCLUDED_BBS_NEWUSER_H
-#define INCLUDED_BBS_NEWUSER_H
+#include "common/menus/menu_data_util.h"
 
-#include <string>
-#include "sdk/user.h"
+#include "core/strings.h"
 
-void input_dataphone();
-void input_name();
-void input_realname();
-bool valid_phone(const std::string& phoneNumber);
-void input_street();
-void input_city();
-void input_state();
-void input_country();
-void input_zipcode();
-void input_sex();
-void input_age(wwiv::sdk::User* u);
-void input_comptype();
-void input_screensize();
-void input_pw(wwiv::sdk::User* u);
-void input_ansistat();
-void input_callsign();
-void newuser();
+namespace wwiv::common::menus {
 
 
+menu_data_and_options_t::menu_data_and_options_t(const std::string& raw) {
+  const auto idx = raw.find(' ');
+  if (idx == std::string::npos) {
+    data_ = raw;
+    return;
+  }
+  data_ = raw.substr(0, idx);
+  const auto o = raw.substr(idx + 1);
+  const auto v = strings::SplitString(o, " ");
+  for (const auto& f : v) {
+    if (const auto fidx = f.find('='); fidx != std::string::npos) {
+      auto key = strings::ToStringLowerCase(strings::StringTrim(f.substr(0, fidx))); 
+      auto val = strings::ToStringLowerCase(strings::StringTrim(f.substr(fidx + 1))); 
+      opts_.emplace(key, val);
+    }
+  }
+}
 
+std::set<std::string> menu_data_and_options_t::opts(const std::string& key) const {
+  std::set<std::string> r;
+  for (auto [s, e] = opts_.equal_range(key); s != e; ++s) {
+    r.insert(s->second);
+  }
+  return r;
+}
 
-#endif
+const std::string& menu_data_and_options_t::data() const {
+  return data_;
+}
+
+}

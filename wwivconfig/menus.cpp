@@ -18,6 +18,8 @@
 /**************************************************************************/
 #include "wwivconfig/menus.h"
 
+#include "common/menus/menu_generator.h"
+#include "common/value/bbsvalueprovider.h"
 #include "core/file.h"
 #include "core/findfiles.h"
 #include "core/log.h"
@@ -32,17 +34,40 @@
 #include "sdk/usermanager.h"
 #include "sdk/fido/fido_callout.h"
 #include "sdk/menus/menu.h"
+#include "common/value/uservalueprovider.h"
+#include "local_io/null_local_io.h"
+#include "sdk/value/valueprovider.h"
+
 #include <filesystem>
 #include <string>
 #include <utility>
 #include <vector>
 
+using namespace wwiv::common::value;
 using namespace wwiv::core;
 using namespace wwiv::local::ui;
 using namespace wwiv::sdk;
 using namespace wwiv::sdk::fido;
 using namespace wwiv::stl;
 using namespace wwiv::strings;
+
+static auto create_providers(const Config& config) -> std::vector<const value::ValueProvider*> {
+  const UserManager um(config);
+  User user{};
+  if (!um.readuser(&user, 1)) {
+    user.set_name("SYSOP");
+    user.sl(255);
+    user.dsl(255);
+  }
+  UserValueProvider up(config, user, 255, config.sl(255));
+
+  wwiv::local::io::NullLocalIO null_io;
+  const wwiv::common::SessionContext sess(&null_io);
+  BbsValueProvider bbs_provider(config, sess);
+
+  std::vector<const value::ValueProvider*> providers{&up, &bbs_provider};
+  return providers; 
+}
 
 class ActionPickerSubDialog final : public SubDialog<std::string> {
 public:
@@ -104,7 +129,7 @@ static void edit_menu_action(const Config& config, menus::menu_action_56_t& a) {
   items.add(new Label("Data:"), new StringEditItem<std::string&>(70, a.data, EditLineMode::ALL),
             "Optional data to pass to the command", 1, y);
   y++;
-  items.add(new Label("ACS:"), new ACSEditItem(config, 70, a.acs),
+  items.add(new Label("ACS:"), new ACSEditItem(config,  create_providers(config), 70, a.acs),
             "WWIV ACS required to execute this command", 1, y);
 
   items.relayout_items_and_labels();
@@ -205,7 +230,7 @@ static void edit_menu_item(const Config& config, menus::menu_item_56_t& m) {
             new StringEditItem<std::string&>(60, m.instance_message, EditLineMode::ALL),
             "Instance message to send to all users", 1, y);
   y++;
-  items.add(new Label("ACS:"), new ACSEditItem(config, 60, m.acs),
+  items.add(new Label("ACS:"), new ACSEditItem(config, create_providers(config), 60, m.acs),
             "WWIV ACS required to access this menu item", 1, y);
   y++;
   items.add(new Label("Password:"),
@@ -303,6 +328,11 @@ public:
 // Base item of an editable value, this class does not use templates.
 class GeneratedMenuSubDialog : public SubDialog<menus::generated_menu_56_t> {
 public:
+  GeneratedMenuSubDialog() = delete;
+  GeneratedMenuSubDialog(const GeneratedMenuSubDialog&) = delete;
+  GeneratedMenuSubDialog(GeneratedMenuSubDialog&&) = delete;
+  GeneratedMenuSubDialog& operator=(const GeneratedMenuSubDialog&) = delete;
+  GeneratedMenuSubDialog& operator=(GeneratedMenuSubDialog&&) = delete;
   GeneratedMenuSubDialog(const Config& config, menus::generated_menu_56_t& d)
       : SubDialog(config, d) {}
   ~GeneratedMenuSubDialog() override = default;
@@ -364,8 +394,9 @@ protected:
  */
 class ShowGeneratedMenuSubDialog : public BaseEditItem {
 public:
-  ShowGeneratedMenuSubDialog(const Config& config, const menus::menu_56_t& menu) : BaseEditItem(10)
-    ,config_(config), menu_(menu) {}
+  ShowGeneratedMenuSubDialog(const Config& config, std::vector<const value::ValueProvider*> p,
+                             const menus::menu_56_t& menu)
+      : BaseEditItem(10), config_(config), providers_(p), menu_(menu) {}
   ~ShowGeneratedMenuSubDialog() override = default;
   ShowGeneratedMenuSubDialog() = delete;
   ShowGeneratedMenuSubDialog(ShowGeneratedMenuSubDialog const&) = delete;
@@ -389,13 +420,13 @@ public:
     window->AttrSet(COLOR_PAIR(old_pair) | old_attr);
     if (ch == KEY_ENTER || ch == wwiv::local::io::TAB || ch == wwiv::local::io::ENTER) {
       curses_out->Cls();
-      UserManager um(config_);
       User user{};
-      if (!um.readuser(&user, 1)) {
-        user.sl(255);
-        user.dsl(255);
-      }
-      const auto lines = GenerateMenuLines(config_, 255, menu_, user, menus::menu_type_t::short_menu);
+      user.SetScreenChars(80);
+      user.SetScreenLines(24);
+      user.sl(255);
+      user.dsl(255);
+      const auto lines = wwiv::common::menus::GenerateMenuLines(
+          config_, menu_, user, providers_, menus::menu_type_t::short_menu);
       auto y = 1;
       for (const auto& l : lines) {
         curses_out->window()->PutsWithPipeColors(0, y++, l);
@@ -422,8 +453,10 @@ protected:
   [[nodiscard]] virtual std::string menu_label() const { return "[View]"; }
 
   const Config& config_;
+  const std::vector<const value::ValueProvider*> providers_;
   const menus::menu_56_t& menu_;
 };
+
 
 static void edit_menu(const Config& config, const std::filesystem::path& menu_dir,
                       const std::string& menu_set, const std::string& menu_name) {
@@ -456,11 +489,12 @@ static void edit_menu(const Config& config, const std::filesystem::path& menu_di
   const auto title = StrCat("Menu: ", menu_name);
   auto y = 1;
   auto& h = m.menu;
+  auto providers = create_providers(config);
   items.add(new Label("Title:"),
             new StringEditItemWithPipeCodes(55, h.title, EditLineMode::ALL),
             "This is the title to display at the top of the menu", 1, y);
   y++;
-  items.add(new Label("ACS:"), new ACSEditItem(config, 55, h.acs),
+  items.add(new Label("ACS:"), new ACSEditItem(config, providers, 55, h.acs),
             "WWIV ACS required to access this menu", 1, y);
   y++;
   items.add(new Label("Number Keys:"),
@@ -497,7 +531,7 @@ static void edit_menu(const Config& config, const std::filesystem::path& menu_di
   y++;
   items.add(new Label("Menu Items:"), new MenuItemsSubDialog(config, h.items), "", 1, y);
   y++;
-  items.add(new Label("View Menu:"), new ShowGeneratedMenuSubDialog(config, h), 
+  items.add(new Label("View Menu:"), new ShowGeneratedMenuSubDialog(config, providers, h), 
     "Display the generated menu for the sysop user.", 1, y);
   y++;
 
@@ -550,8 +584,7 @@ static void select_menu(const wwiv::sdk::Config& config, const std::string& menu
           }
         } else if (result.hotkey == 'C') {
           const auto& old_menu_name = items[result.selected].text();
-          auto menu_name = dialog_input_string(window, "Enter New Menu Name: ", 8);
-          if (!menu_name.empty()) {
+          if (auto menu_name = dialog_input_string(window, "Enter New Menu Name: ", 8); !menu_name.empty()) {
             const auto old_name = FilePath(full_dir_path, StrCat(old_menu_name, ".mnu.json"));
             const auto new_name = FilePath(full_dir_path, StrCat(menu_name, ".mnu.json"));
             File::Copy(old_name, new_name);

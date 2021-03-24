@@ -15,9 +15,11 @@
 /*    either  express  or implied.  See  the  License for  the specific   */
 /*    language governing permissions and limitations under the License.   */
 /**************************************************************************/
-#include "sdk/value/uservalueprovider.h"
+#include "common/value/bbsvalueprovider.h"
 
 #include "core/strings.h"
+#include "common/context.h"
+#include "core/version.h"
 #include "fmt/printf.h"
 #include "sdk/user.h"
 #include "sdk/acs/eval_error.h"
@@ -25,12 +27,15 @@
 #include <optional>
 #include <string>
 
+using namespace wwiv::common::value;
 using namespace wwiv::core;
+using namespace wwiv::sdk;
 using namespace wwiv::sdk::acs;
+using namespace wwiv::sdk::value;
 using namespace parser;
 using namespace wwiv::strings;
 
-namespace wwiv::sdk::value {
+namespace wwiv::common::value {
 
 
 /** Shorthand to create an optional Value */
@@ -38,44 +43,40 @@ template <typename T> static std::optional<Value> val(T&& v) {
   return std::make_optional<Value>(std::forward<T>(v));
 }
 
-std::optional<Value> UserValueProvider::value(const std::string& name) const {
-  if (iequals(name, "sl")) {
-    return val(user_.sl());
-  }
-  if (iequals(name, "dsl")) {
-    return val(user_.dsl());
-  }
-  if (iequals(name, "age")) {
-    return val(user_.age());
-  }
-  if (iequals(name, "ar")) {
-    return val(Ar(user_.ar_int(), true));
-  }
-  if (iequals(name, "dar")) {
-    return val(Ar(user_.dar_int(), true));
-  }
+BbsValueProvider::BbsValueProvider(const Config& config,  const common::SessionContext& sess)
+  : ValueProvider("bbs"), config_(config), sess_(sess) {
+}
+
+BbsValueProvider::BbsValueProvider(common::Context& context)
+  : BbsValueProvider(context.config(), context.session_context()) {
+}
+
+std::optional<Value> BbsValueProvider::value(const std::string& name) const {
   if (iequals(name, "name")) {
-    return val(user_.name());
+    return val(config_.system_name());
   }
-  if (iequals(name, "regnum")) {
-    return val(user_.wwiv_regnum() != 0);
+  if (iequals(name, "sysopname")) {
+    return val(config_.sysop_name());
   }
-  if (iequals(name, "sysop")) {
-    // Should this also check effective_sl? Likely yes?
-    return val(user_.sl() == 255);
+  if (iequals(name, "phone")) {
+    return val(config_.system_phone());
   }
-  if (iequals(name, "cosysop")) {
-    const auto so = user_.sl() == 255;
-    const auto cs = (sl_.ability & ability_cosysop) != 0;
-    return val(so || cs);
+  if (iequals(name, "node")) {
+    return val(sess_.instance_number());
   }
-  if (iequals(name, "guest")) {
-    return val(user_.guest_user());
+  if (iequals(name, "reg")) {
+    return val(static_cast<int>(config_.wwiv_reg_number()));
   }
-  if (iequals(name, "validated")) {
-    return val(effective_sl_ >= config_.validated_sl());
+  if (iequals(name, "os")) {
+    return val(os::os_version_string());
   }
-  throw eval_error(fmt::format("No user attribute named 'user.{}' exists.", name));
+  if (iequals(name, "version")) {
+    return val(full_version());
+  }
+  if (iequals(name, "compiletime")) {
+    return val(wwiv_compile_datetime());
+  }
+  throw eval_error(fmt::format("No attribute named 'bbs.{}' exists.", name));
 }
 
 }

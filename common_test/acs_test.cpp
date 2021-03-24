@@ -16,18 +16,17 @@
 /*    language governing permissions and limitations under the License.   */
 /*                                                                        */
 /**************************************************************************/
+#include "common/value/uservalueprovider.h"
 #include "core/log.h"
 #include "core/strings.h"
-#include "core/parser/ast.h"
 #include "sdk/user.h"
 #include "sdk/acs/eval.h"
-#include "sdk/value/uservalueprovider.h"
 
 #include "gtest/gtest.h"
 #include <string>
 
+using namespace wwiv::common::value;
 using namespace wwiv::core;
-using namespace wwiv::core::parser;
 using namespace wwiv::sdk::acs;
 using namespace wwiv::sdk::value;
 
@@ -160,14 +159,14 @@ TEST_F(AcsTest, Sysop_Pass_Negated) {
 TEST_F(AcsTest, Regnum_Pass) {
   user_.sl(12);
   user_.wwiv_regnum(12345);
-  createEval("user.regnum == true");
+  createEval("user.registered == true");
   EXPECT_TRUE(eval->eval());
 }
 
 TEST_F(AcsTest, Regnum_Fail) {
   user_.sl(12);
   user_.wwiv_regnum(0);
-  createEval("user.regnum == true");
+  createEval("user.registered == true");
   EXPECT_FALSE(eval->eval());
 }
 

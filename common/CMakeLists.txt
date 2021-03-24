@@ -15,7 +15,8 @@ set(COMMON_SOURCES
  "iobase.cpp"
  "language.cpp"
  "macro_context.cpp"
- "menu_data_util.cpp"
+ "menus/menu_data_util.cpp"
+ "menus/menu_generator.cpp"
  "message_editor_data.cpp"
  "output.cpp"
  "pause.cpp"
@@ -24,6 +25,8 @@ set(COMMON_SOURCES
  "quote.cpp"
  "remote_io.cpp"
  "remote_socket_io.cpp"
+ "value/bbsvalueprovider.cpp"
+ "value/uservalueprovider.cpp"
  "workspace.cpp"
 )
 

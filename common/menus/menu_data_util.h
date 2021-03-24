@@ -16,41 +16,29 @@
 /*    language governing permissions and limitations under the License.   */
 /*                                                                        */
 /**************************************************************************/
-#include "common/menu_data_util.h"
+#ifndef INCLUDED_COMMON_MENUS_MENU_DATA_UTIL_H
+#define INCLUDED_COMMON_MENUS_MENU_DATA_UTIL_H
 
-#include "core/strings.h"
+#include <map>
+#include <set>
+#include <string>
 
-namespace wwiv::common {
+namespace wwiv::common::menus {
 
+class menu_data_and_options_t {
+public:
+  explicit menu_data_and_options_t(const std::string& raw);
 
-menu_data_and_options_t::menu_data_and_options_t(const std::string& raw) {
-  const auto idx = raw.find(' ');
-  if (idx == std::string::npos) {
-    data_ = raw;
-    return;
-  }
-  data_ = raw.substr(0, idx);
-  const auto o = raw.substr(idx + 1);
-  const auto v = strings::SplitString(o, " ");
-  for (const auto& f : v) {
-    if (const auto fidx = f.find('='); fidx != std::string::npos) {
-      auto key = strings::ToStringLowerCase(strings::StringTrim(f.substr(0, fidx))); 
-      auto val = strings::ToStringLowerCase(strings::StringTrim(f.substr(fidx + 1))); 
-      opts_.emplace(key, val);
-    }
-  }
-}
-
-std::set<std::string> menu_data_and_options_t::opts(const std::string& key) const {
-  std::set<std::string> r;
-  for (auto [s, e] = opts_.equal_range(key); s != e; ++s) {
-    r.insert(s->second);
-  }
-  return r;
-}
-
-const std::string& menu_data_and_options_t::data() const {
-  return data_;
-}
+  [[nodiscard]] std::set<std::string> opts(const std::string&) const;
+  [[nodiscard]] const std::string& data() const;
+  [[nodiscard]] auto size() const noexcept { return opts_.size(); }
+  [[nodiscard]] bool opts_empty() const noexcept { return opts_.empty(); }
+  [[nodiscard]] const std::multimap<std::string, std::string>& opts() const { return opts_; }
+private:
+  std::string data_;
+  std::multimap<std::string, std::string> opts_;
+};
 
 }
+
+#endif 

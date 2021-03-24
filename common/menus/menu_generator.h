@@ -16,28 +16,29 @@
 /*    language governing permissions and limitations under the License.   */
 /*                                                                        */
 /**************************************************************************/
-#ifndef INCLUDED_COMMON_MENU_DATA_UTIL_H
-#define INCLUDED_COMMON_MENU_DATA_UTIL_H
+#ifndef INCLUDED_COMMON_MENUS_MENU_GENERATOR_H
+#define INCLUDED_COMMON_MENUS_MENU_GENERATOR_H
+
+#include "sdk/menus/menu.h"
 
 #include <map>
 #include <set>
 #include <string>
 
-namespace wwiv::common {
+namespace wwiv {
+namespace sdk {
+namespace value {
+class ValueProvider;
+}
+}
+}
 
-class menu_data_and_options_t {
-public:
-  explicit menu_data_and_options_t(const std::string& raw);
+namespace wwiv::common::menus {
 
-  [[nodiscard]] std::set<std::string> opts(const std::string&) const;
-  [[nodiscard]] const std::string& data() const;
-  [[nodiscard]] auto size() const noexcept { return opts_.size(); }
-  [[nodiscard]] bool opts_empty() const noexcept { return opts_.empty(); }
-  [[nodiscard]] const std::multimap<std::string, std::string>& opts() { return opts_; }
-private:
-  std::string data_;
-  std::multimap<std::string, std::string> opts_;
-};
+std::vector<std::string>
+GenerateMenuLines(const sdk::Config& config, const sdk::menus::menu_56_t& menu,
+                  const sdk::User& user, const std::vector<const sdk::value::ValueProvider*>& providers,
+                  sdk::menus::menu_type_t typ);
 
 }
 
