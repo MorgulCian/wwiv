@@ -27,6 +27,11 @@ void config_qscan();
 void enter_regnum();
 void defaults(bool& need_menu_reload);
 void config_scan_plus(int type);
+void change_password();
+void change_macros();
 void modify_mailbox();
+void change_optional_lines();
+void change_email_address();
+void change_colors();
 
 #endif
