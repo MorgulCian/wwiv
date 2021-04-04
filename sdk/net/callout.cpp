@@ -33,6 +33,7 @@
 using namespace wwiv::core;
 using namespace wwiv::strings;
 using namespace wwiv::sdk;
+using namespace wwiv::sdk::net;
 
 namespace wwiv::sdk {
 
@@ -205,7 +206,7 @@ static bool ParseCalloutFile(std::map<uint16_t, net_call_out_rec>* node_config_m
   return true;
 }
 
-Callout::Callout(const net_networks_rec& net, int max_backups)
+Callout::Callout(const Network& net, int max_backups)
     : net_(net), max_backups_(max_backups) {
   ParseCalloutFile(&node_config_, net.dir);
 }

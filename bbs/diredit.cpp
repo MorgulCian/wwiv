@@ -39,6 +39,7 @@ using wwiv::common::InputMode;
 using wwiv::core::DataFile;
 using namespace wwiv::core;
 using namespace wwiv::sdk;
+using namespace wwiv::sdk::net;
 using namespace wwiv::stl;
 using namespace wwiv::strings;
 
@@ -78,8 +79,8 @@ static void showdirs() {
   }
 }
 
-std::optional<net_networks_rec> select_network() {
-  std::map<int, net_networks_rec> nets;
+std::optional<Network> select_network() {
+  std::map<int, Network> nets;
   auto num = 0;
   for (const auto& n : a()->nets().networks()) {
     if (n.type == network_type_t::ftn) {
@@ -111,8 +112,7 @@ static void list_area_tags(const std::vector<wwiv::sdk::files::dir_area_t>& area
     bout << "|#6(None)" << wwiv::endl;
     return;
   }
-  net_networks_rec empty{};
-  empty.name = "(Unknown)";
+  Network empty(network_type_t::unknown, "(Unknown)");
 
   auto nn = 0;
   auto first{true};

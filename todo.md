@@ -3,6 +3,7 @@
 ***
 
 # TODO Cleanups
+* make a SideMenu class so we don't need statics in side_menu method.
 * redo readmail(...) It's a friggin mess.
 * make nightly event or fix check for mail forwarded to a deleted user, and then fix that.
 
@@ -62,7 +63,7 @@ jq ".number" jenkins.json
 
 ## Infrastructure Cleanup
 ***
-* Make sure the net_networks_rec.network_number is accurate, then try
+* Make sure the Network.network_number is accurate, then try
   to get rid of the other network_numbers everywhere.
 * Try to remove a()->current_net() and a()->net_num(), pass in the net 
   as much as possible.

@@ -17,6 +17,7 @@
 /*                                                                        */
 /**************************************************************************/
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
 
 #include "core/stl.h"
 #include "core/strings.h"
@@ -49,22 +50,31 @@ Host,261,Maryland_Central_Net,NC,Sysop_Name261,-Unpublished-,300,CM,XX,INA:bbs.w
 ,1,Weather_Station_Hub,Bel_Air_MD,Sysop_Name261_1,-Unpublished-,300,CM,XX,INA:bbs.weather-station.org,IBN:24555
 ,1300,Weather_Station_BBS_(Mystic),Bel_Air_MD,Sysop_Name261_1300,-Unpublished-,300,CM,XX,INA:bbs.weather-station.org,IBN:24557
 ;
+;
+;
+Zone,42,Mars,Slaterville_Springs_NY,Sysop_Name1,1-607-555-1212,9600,CM,XX,H16,V32b,V42b,V34,V32T,X2C,INA:filegate.net,IBN,IBN:24555,IFT,ITN
+,20,The_Martian_Backbone,Zone_1,Sysop_Name1_20,-Unpublished-,300,CM,MO,XX,INA:the-estar.com,IBN
+;
+Region,21,Mars_Station,Station_1,Sysop_Name10,-Unpublished-,300,CM,XX,INA:elonsbbs.example.org,IBN,IFC
+,1,Region_10_Echomail_Coordinator_Mars_Station,Mars_Station,Sysop_Name10_1,-Unpublished-,300,CM,XX,INA:elonsbbs.example.org,IBN,IFC
+;
+Host,123,Elons_BBS,Mars_Station,Sysop_Name123,-Unpublished-,300,CM,MO,INA:elonsbbs.example.org,IBN
+;
+;
 )";
 
 TEST(NodelistTest, Basic) {
-  NodelistEntry e{};
-  const auto ok = NodelistEntry::ParseDataLine(
-      ",1,system_name,location,sysop_name,phone_number,baud_rate,CM,INA:host:port", e);
-  ASSERT_TRUE(ok);
-  EXPECT_EQ(e.name_, "system name");
+  const auto e = NodelistEntry::ParseDataLine(
+      ",1,system_name,location,sysop_name,phone_number,baud_rate,CM,INA:host:port");
+  ASSERT_TRUE(e);
+  EXPECT_EQ(e->name(), "system name");
 }
 
 TEST(NodelistTest, Zone) {
-  NodelistEntry e{};
-  const auto ok = NodelistEntry::ParseDataLine(
-      "Zone,1,system_name,location,sysop_name,phone_number,baud_rate,CM,INA:host:port", e);
-  ASSERT_TRUE(ok);
-  EXPECT_EQ(e.keyword_, NodelistKeyword::zone);
+  const auto e = NodelistEntry::ParseDataLine(
+      "Zone,1,system_name,location,sysop_name,phone_number,baud_rate,CM,INA:host:port");
+  ASSERT_TRUE(e);
+  EXPECT_EQ(e->keyword(), NodelistKeyword::zone);
 }
 
 TEST(NodelistTest, Smoke) {
@@ -75,14 +85,14 @@ TEST(NodelistTest, Smoke) {
 
   const auto n1_261_1 = nl.entry(1, 261, 1);
   ASSERT_TRUE(n1_261_1 != nullptr);
-  EXPECT_EQ("Weather Station Hub", n1_261_1->name_);
-  EXPECT_EQ("Sysop Name261 1", n1_261_1->sysop_name_);
-  EXPECT_EQ("Bel Air MD", n1_261_1->location_);
-  EXPECT_TRUE(n1_261_1->binkp_);
-  EXPECT_EQ("bbs.weather-station.org", n1_261_1->hostname_);
-  EXPECT_EQ("bbs.weather-station.org", n1_261_1->binkp_hostname_);
-  EXPECT_EQ(24555, n1_261_1->binkp_port_);
-  EXPECT_FALSE(n1_261_1->vmodem_);
+  EXPECT_EQ("Weather Station Hub", n1_261_1->name());
+  EXPECT_EQ("Sysop Name261 1", n1_261_1->sysop_name());
+  EXPECT_EQ("Bel Air MD", n1_261_1->location());
+  EXPECT_TRUE(n1_261_1->binkp());
+  EXPECT_EQ("bbs.weather-station.org", n1_261_1->hostname());
+  EXPECT_EQ("bbs.weather-station.org", n1_261_1->binkp_hostname());
+  EXPECT_EQ(24555u, n1_261_1->binkp_port());
+  EXPECT_FALSE(n1_261_1->vmodem());
 }
 
 TEST(NodelistTest, ZoneNet) {
@@ -91,7 +101,7 @@ TEST(NodelistTest, ZoneNet) {
   ASSERT_TRUE(nl);
 
   auto n261 = nl.entries(1, 261);
-  EXPECT_EQ(FidoAddress("1:261/1"), n261.front().address_);
+  EXPECT_EQ(FidoAddress("1:261/1"), n261.front().address());
 }
 
 TEST(NodelistTest, Zones) {
@@ -99,10 +109,22 @@ TEST(NodelistTest, Zones) {
   const Nodelist nl(lines, "");
   ASSERT_TRUE(nl);
 
-  auto zones = nl.zones();
-  EXPECT_EQ(1u, zones.size());
-  EXPECT_EQ(1, zones.front());
+  const auto zones = nl.zones();
+  EXPECT_EQ(2u, zones.size());
+  EXPECT_THAT(zones, testing::ElementsAre(static_cast<uint16_t>(1), static_cast<uint16_t>(42)));
 }
+
+TEST(NodelistTest, Has_Zone) {
+  const auto lines = SplitString(raw, "\n");
+  const Nodelist nl(lines, "");
+  ASSERT_TRUE(nl);
+
+  auto zones = nl.zones();
+  EXPECT_TRUE(nl.has_zone(1));
+  EXPECT_TRUE(nl.has_zone(42));
+  EXPECT_FALSE(nl.has_zone(8));
+}
+
 
 TEST(NodelistTest, Nets) {
   const auto lines = SplitString(raw, "\n");

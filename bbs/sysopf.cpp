@@ -69,6 +69,7 @@ using wwiv::core::FilePath;
 using namespace wwiv::core;
 using namespace wwiv::local::io;
 using namespace wwiv::sdk;
+using namespace wwiv::sdk::net;
 using namespace wwiv::stl;
 using namespace wwiv::strings;
 using namespace wwiv::sdk::msgapi;
@@ -296,7 +297,7 @@ enum class net_search_type_t {
   NET_SEARCH_AC, NET_SEARCH_GC, NET_SEARCH_NC, NET_SEARCH_PHSUBSTR,
   NET_SEARCH_NOCONNECT, NET_SEARCH_ALL };
 
-bool print_wwivnet_net_listing(const net_networks_rec& net) {
+bool print_wwivnet_net_listing(const Network& net) {
   int gn = 0;
   char s2[101], bbstype;
 
@@ -431,7 +432,7 @@ bool print_wwivnet_net_listing(const net_networks_rec& net) {
       char s1[101];
       auto matched = false;
       const auto& csne = b.second;
-      if (csne.forsys == WWIVNET_NO_NODE && cmdbit != net_search_type_t::NET_SEARCH_NOCONNECT) {
+      if (csne.forsys == net::WWIVNET_NO_NODE && cmdbit != net_search_type_t::NET_SEARCH_NOCONNECT) {
         continue;
       }
       strcpy(s1, csne.phone);
@@ -564,8 +565,8 @@ bool print_wwivnet_net_listing(const net_networks_rec& net) {
   return false;
 }
 
-static bool print_ftn_net_listing(net_networks_rec& net) {
-  if (!try_load_nodelist(net)) {
+static bool print_ftn_net_listing(Network& net) {
+  if (!net.try_load_nodelist()) {
     return false;
   }
 
@@ -616,13 +617,13 @@ static bool print_ftn_net_listing(net_networks_rec& net) {
         continue;
       }
       if (!name_part.empty()) {
-        const auto bbs_name = ToStringUpperCase(e.second.name_);
+        const auto bbs_name = ToStringUpperCase(e.second.name());
         const auto idx = bbs_name.find(name_part);
         if (idx == std::string::npos) {
           continue;
         }
       }
-      bout.format(" |#5{:<18.18}  |#1{}\r\n", e.first.as_string(false, false), e.second.name_);
+      bout.format(" |#5{:<18.18}  |#1{}\r\n", e.first.as_string(false, false), e.second.name());
       if (bin.checka()) {
         break;
       }
@@ -703,7 +704,7 @@ void query_print_net_listing(bool force_pause) {
         return;
       }
     } else if (net.type == network_type_t::ftn) {
-      if (!try_load_nodelist(net)) {
+      if (!net.try_load_nodelist()) {
         continue;
       }
       if (print_ftn_net_listing(net)) {

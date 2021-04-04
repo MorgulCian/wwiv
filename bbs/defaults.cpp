@@ -57,6 +57,7 @@
 using wwiv::common::InputMode;
 using namespace wwiv::local::io;
 using namespace wwiv::sdk;
+using namespace wwiv::sdk::net;
 using namespace wwiv::stl;
 using namespace wwiv::strings;
 
@@ -959,7 +960,7 @@ void config_scan_plus(int type) {
 
   auto& confsubdir = type == NSCAN ? a()->uconfdir : a()->uconfsub;
   int useconf = ok_multiple_conf(a()->user(), confsubdir);
-  a()->localIO()->topdata(LocalIO::topdata_t::none);
+  bout.localIO()->topdata(LocalIO::topdata_t::none);
   a()->UpdateTopScreen();
 
   std::vector<std::string> menu_items = { "Next",  "Previous", "Toggle", "Clear All", "Set All" };

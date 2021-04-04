@@ -15,35 +15,48 @@
 /*    either  express  or implied.  See  the  License for  the specific   */
 /*    language governing permissions and limitations under the License.   */
 /**************************************************************************/
-#ifndef INCLUDED_SDK_CONNECT_H
-#define INCLUDED_SDK_CONNECT_H
+#include "sdk/net/networks.h"
 
-#include "sdk/net/net.h"
-#include <filesystem>
-#include <initializer_list>
-#include <map>
+#include "core/file.h"
+#include "core/stl.h"
+#include "core/strings.h"
+#include "fmt/format.h"
 #include <string>
 
-namespace wwiv::sdk {
+using namespace wwiv::core;
+using namespace wwiv::sdk;
+using namespace wwiv::sdk::net;
+using namespace wwiv::stl;
+using namespace wwiv::strings;
 
-  
-class Connect {
- public:
-  explicit Connect(const std::filesystem::path& network_dir);
-  // VisibleForTesting
-  Connect(std::initializer_list<net::net_interconnect_rec> l);
-  virtual ~Connect();
-  const net::net_interconnect_rec* node_config_for(int node) const;
-  Connect& operator=(const Connect& rhs) { node_config_ = rhs.node_config_; return *this; }
-  std::string ToString() const;
-  const std::map<uint16_t, net::net_interconnect_rec>& node_config() const { return node_config_; }
 
- private:
-  std::map<uint16_t, net::net_interconnect_rec> node_config_;
-};
+namespace wwiv::sdk::net {
 
-bool ParseConnectNetLine(const std::string& line, net::net_interconnect_rec* config);
+bool Network::try_load_nodelist() {
+  if (nodelist && nodelist->initialized() && !nodelist->entries().empty()) {
+    return true;
+  }
 
-}  // namespace
+  const auto nl_path = fido::Nodelist::FindLatestNodelist(dir, fido.nodelist_base);
+  const auto domain = fido::domain_from_address(fido.fido_address);
+  nodelist = std::make_shared<fido::Nodelist>(core::FilePath(dir, nl_path), domain);
+  return nodelist->initialized();
+}
 
-#endif
+std::string to_string(const Network& n) {
+  switch (n.type) {
+  case network_type_t::ftn:
+    return fmt::format("|#9(|#2{}|#9@|#1{}|#9) ", n.fido.fido_address, n.name);
+  case network_type_t::internet:
+    return fmt::format("|#9(|#2{}|#9@|#1Internet|#9) ", n.name);
+  case network_type_t::news:
+    return fmt::format("|#9(|#2{}|#9@|#1News|#9) ", n.name);
+  case network_type_t::wwivnet:
+    return fmt::format("|#9(|#2@{}|#9.|#1{}|#9) ", n.sysnum, n.name);
+  case network_type_t::unknown:
+    return "|#9(|#6unknown|#9) ";
+  }
+  return fmt::format("|#9(|#2@{}|#9.|#1{}|#9) ", n.sysnum, n.name);
+}
+
+} // namespace wwiv::sdk

@@ -37,15 +37,17 @@
 #include <vector>
 
 using namespace wwiv::core;
+using namespace wwiv::sdk;
+using namespace wwiv::sdk::net;
 using namespace wwiv::stl;
 using namespace wwiv::strings;
 
 
 namespace wwiv::sdk {
 
-bool read_subs_xtr(const std::string& datadir, const std::vector<net_networks_rec>& net_networks,
+bool read_subs_xtr(const std::string& datadir, const std::vector<Network>& net_networks,
                    const std::vector<subboardrec_422_t>& subs, std::vector<xtrasubsrec>& xsubs);
-bool write_subs_xtr(const std::string& datadir, const std::vector<net_networks_rec>& net_networks,
+bool write_subs_xtr(const std::string& datadir, const std::vector<Network>& net_networks,
                     const std::vector<xtrasubsrec>& xsubs, int max_backups);
 
 std::vector<subboardrec_422_t> read_subs(const std::string &datadir);
@@ -69,7 +71,7 @@ bool Subs::SaveToJSON(const std::filesystem::path& dir, const std::string& filen
   return f.Save();
 }
 
-static int FindNetworkByName(const std::vector<net_networks_rec>& net_networks, const std::string& name) {
+static int FindNetworkByName(const std::vector<Network>& net_networks, const std::string& name) {
   for (auto i = 0; i < wwiv::stl::ssize(net_networks); i++) {
     if (iequals(net_networks[i].name, name)) {
       return i;
@@ -78,7 +80,7 @@ static int FindNetworkByName(const std::vector<net_networks_rec>& net_networks, 
   return -1;
 }
 
-bool ParseXSubsLine(const std::vector<net_networks_rec>& net_networks, const std::string& line, xtrasubsrec& xsub) {
+bool ParseXSubsLine(const std::vector<Network>& net_networks, const std::string& line, xtrasubsrec& xsub) {
   std::stringstream stream(line);
   std::string net_name;
   stream >> net_name;
@@ -104,7 +106,7 @@ bool ParseXSubsLine(const std::vector<net_networks_rec>& net_networks, const std
   return true;
 }
 
-bool read_subs_xtr(const std::string& datadir, const std::vector<net_networks_rec>& net_networks, const std::vector<subboardrec_422_t>& subs, std::vector<xtrasubsrec>& xsubs) {
+bool read_subs_xtr(const std::string& datadir, const std::vector<Network>& net_networks, const std::vector<subboardrec_422_t>& subs, std::vector<xtrasubsrec>& xsubs) {
   // Clear the existing xsubs.
   xsubs.clear();
   // add default constructed xtrasubsrec entries
@@ -160,7 +162,7 @@ bool read_subs_xtr(const std::string& datadir, const std::vector<net_networks_re
   return true;
 }
 
-bool write_subs_xtr(const std::string& datadir, const std::vector<net_networks_rec>& net_networks,
+bool write_subs_xtr(const std::string& datadir, const std::vector<Network>& net_networks,
                     const std::vector<xtrasubsrec>& xsubs, int max_backups) {
   // Backup subs.xtr
   const auto sx = FilePath(datadir, SUBS_XTR);
@@ -219,7 +221,7 @@ bool write_subs(const std::string &datadir, const std::vector<subboardrec_422_t>
 
 // Classes
 
-Subs::Subs(std::string datadir, const std::vector<net_networks_rec>& net_networks, int max_backups)
+Subs::Subs(std::string datadir, const std::vector<Network>& net_networks, int max_backups)
   : datadir_(std::move(datadir)), net_networks_(net_networks), max_backups_(max_backups) {};
 
 Subs::~Subs() = default;

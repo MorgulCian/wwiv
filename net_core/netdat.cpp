@@ -27,6 +27,8 @@
 #include "sdk/net/net.h"
 
 using namespace wwiv::core;
+using namespace wwiv::sdk;
+using namespace wwiv::sdk::net;
 
 namespace wwiv::net {
 
@@ -47,7 +49,7 @@ char NetDat::NetDatMsgType(netdat_msgtype_t t) {
 }
 
 NetDat::NetDat(std::filesystem::path gfiles, std::filesystem::path logs,
-               const net_networks_rec& net, char net_cmd, Clock& clock)
+               const Network& net, char net_cmd, Clock& clock)
     : gfiles_(std::move(gfiles)), logs_(std::move(logs)), net_(net), net_cmd_(net_cmd),
       clock_(clock) {
   rollover();

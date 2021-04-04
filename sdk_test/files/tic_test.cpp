@@ -25,6 +25,7 @@
 #include "sdk/files/tic.h"
 
 using namespace wwiv::core;
+using namespace wwiv::sdk::net;
 
 TEST(TicTest, Smoke) {
   FileHelper helper;
@@ -95,6 +96,31 @@ Path 21:2/100 1591287460 Thu Jun 04 16:17:40 2020 UTC Mystic/1.12 A46
   EXPECT_TRUE(t.IsValid());
 }
 
+
+TEST(TicTest, Malformed_Addresses) {
+  FileHelper helper;
+
+  const std::string kFSXINFO = R"(
+Created by PXTIC/Win v7.0 (c) 2018 Santronics
+Area [HNET] INFO
+Origin Me, 954:895/1
+From Me, 954:895/1
+To Morgul, 954:895/5
+File HOBBYNET.ZIP
+  )";
+
+  const auto file = helper.CreateTempFile("HOBBYNET.tic", kFSXINFO);
+
+  wwiv::sdk::files::TicParser p(file.parent_path());
+  auto o = p.parse("HOBBYNET.tic");
+  ASSERT_TRUE(o);
+
+  const auto& t = o.value();
+  EXPECT_EQ("954:895/5", t.to.as_string(false, false));
+  EXPECT_EQ("954:895/1", t.origin.as_string(false, false));
+  EXPECT_EQ("954:895/1", t.from.as_string(false, false));
+}
+
 TEST(TicTest, FindFileAreaForTic) {
   FileHelper helper;
 
@@ -118,7 +144,7 @@ File sample.zip
   wwiv::core::uuid_generator generator(rd);
   auto uuid = generator.generate();
 
-  net_networks_rec net{};
+  Network net{};
   net.name = "foo";
   net.uuid = uuid;
 
@@ -166,7 +192,7 @@ File sample.zip
   wwiv::core::uuid_generator generator(rd);
   auto uuid = generator.generate();
 
-  net_networks_rec net{};
+  Network net{};
   net.name = "foo";
   net.uuid = uuid;
 

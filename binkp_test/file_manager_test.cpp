@@ -26,6 +26,7 @@
 
 using namespace wwiv::core;
 using namespace wwiv::net;
+using namespace wwiv::sdk::net;
 using namespace wwiv::strings;
 
 class FileManagerTest : public testing::Test {
@@ -94,7 +95,7 @@ public:
   }
 
   FileHelper file_helper_;
-  net_networks_rec net{};
+  Network net{};
   std::unique_ptr<FileManager> fm;
   std::unique_ptr<wwiv::sdk::Config> config_;
   std::unique_ptr<BinkConfig> bink_config_;

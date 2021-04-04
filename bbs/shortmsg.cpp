@@ -35,6 +35,7 @@
 
 using namespace wwiv::core;
 using namespace wwiv::sdk;
+using namespace wwiv::sdk::net;
 using namespace wwiv::strings;
 
 /*
@@ -131,7 +132,7 @@ static void SendLocalShortMessage(int usernum, const std::string& messageText) {
 }
 
 static void SendRemoteShortMessage(int user_num, int system_num, const std::string& text,
-                                   const net_networks_rec& net) {
+                                   const Network& net) {
   net_header_rec nh{};
   nh.tosys = static_cast<uint16_t>(system_num);
   nh.touser = static_cast<uint16_t>(user_num);

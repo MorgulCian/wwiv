@@ -28,6 +28,7 @@
 #include <vector>
 
 using namespace wwiv::core;
+using namespace wwiv::sdk::net;
 using namespace wwiv::stl;
 using namespace wwiv::strings;
 
@@ -56,7 +57,7 @@ ParseFloFile(const std::filesystem::path& path) {
   return result;
 }
 
-FloFile::FloFile(const net_networks_rec& net, std::filesystem::path p)
+FloFile::FloFile(const Network& net, std::filesystem::path p)
     : net_(net), path_(std::move(p)) {
   std::filesystem::path fn;
   if (!path_.has_filename()) {

@@ -32,14 +32,14 @@
 
 using namespace wwiv::core;
 using namespace wwiv::strings;
+using namespace wwiv::sdk;
+using namespace wwiv::sdk::net;
 
 namespace wwiv::sdk::files {
 
 Tic::Tic(std::filesystem::path path)
     : path_(std::move(path)), valid_(false) {
 }
-
-Tic::~Tic() = default;
 
 bool Tic::IsValid() const {
   return valid_ && exists() && crc_valid() && size_valid();
@@ -127,11 +127,23 @@ std::optional<Tic> TicParser::parse(const std::string& filename, const std::vect
     } else if (keyword == "areadesc") {
       t.area_description = params;
     } else if (keyword == "origin") {
-      t.origin = fido::FidoAddress(params);
+      if (const auto o = fido::try_parse_fidoaddr(params, fido::fidoaddr_parse_t::lax)) {
+        t.origin = o.value();
+      } else {
+        LOG(WARNING) << "Unable to parse 'origin' from : '" << params << "'";
+      }
     } else if (keyword == "from") {
-      t.from = fido::FidoAddress(params);
+      if (const auto o = fido::try_parse_fidoaddr(params, fido::fidoaddr_parse_t::lax)) {
+        t.from = o.value();
+      } else {
+        LOG(WARNING) << "Unable to parse 'from' from : '" << params << "'";
+      }
     } else if (keyword == "to") {
-      t.to = fido::FidoAddress(params);
+      if (const auto o = fido::try_parse_fidoaddr(params, fido::fidoaddr_parse_t::lax)) {
+        t.to = o.value();
+      } else {
+        LOG(WARNING) << "Unable to parse 'to' from : '" << params << "'";
+      }
     } else if (keyword == "file") {
       t.file = params;
     } else if (keyword == "lfile" || keyword == "fullname") {
@@ -168,7 +180,7 @@ std::optional<Tic> TicParser::parse(const std::string& filename, const std::vect
 }
 
 std::optional<directory_t> FindFileAreaForTic(const files::Dirs& dirs, const Tic& tic,
-                                              const net_networks_rec& net) {
+                                              const Network& net) {
   const auto area_tag = tic.area;
   for (const auto& d : dirs.dirs()) {
     for (const auto& dt : d.area_tags) {
@@ -185,4 +197,4 @@ std::optional<directory_t> FindFileAreaForTic(const files::Dirs& dirs, const Tic
   return std::nullopt;
 }
 
-      } // namespace wwiv::sdk::files
+} // namespace wwiv::sdk::files

@@ -45,6 +45,7 @@
 #include "sdk/usermanager.h"
 #include "sdk/fido/fido_util.h"
 #include "sdk/fido/nodelist.h"
+#include "sdk/net/net.h"
 #include "sdk/net/networks.h"
 
 #include <chrono>
@@ -59,6 +60,7 @@ using namespace wwiv::common;
 using namespace wwiv::core;
 using namespace wwiv::os;
 using namespace wwiv::sdk;
+using namespace wwiv::sdk::net;
 using namespace wwiv::strings;
 
 // returns true on success (i.e. the message gets forwarded)
@@ -462,10 +464,10 @@ void email(const std::string& title, uint16_t user_number, uint16_t system_numbe
           bout << "Bad FTN Address: " << destination;
           return;
         }
-        if (auto & net = a()->mutable_current_net(); try_load_nodelist(net)) {
+        if (auto & net = a()->mutable_current_net(); net.try_load_nodelist()) {
           if (auto & nl = *net.nodelist; nl.contains(addr)) {
             const auto& e = nl.entry(addr);
-            destination_bbs_name = e.name_;
+            destination_bbs_name = e.name();
           } else {
             bout.format("|#6Address '|#2{}|#6' does not existing in the nodelist.\r\n", addr);
             bout.nl(2);

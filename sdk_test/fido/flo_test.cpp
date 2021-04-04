@@ -28,6 +28,7 @@
 using namespace wwiv::core;
 using namespace wwiv::strings;
 using namespace wwiv::sdk::fido;
+using namespace wwiv::sdk::net;
 
 class FloTest : public testing::Test {
 public:
@@ -39,7 +40,7 @@ public:
 
 protected:
   FileHelper helper_;
-  net_networks_rec net{};
+  Network net{};
 
   std::filesystem::path p{};
 };

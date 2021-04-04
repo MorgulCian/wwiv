@@ -57,6 +57,7 @@ using namespace wwiv::local::io;
 using namespace wwiv::sdk;
 using namespace wwiv::sdk::ansi;
 using namespace wwiv::sdk::msgapi;
+using namespace wwiv::sdk::net;
 using namespace wwiv::stl;
 using namespace wwiv::strings;
 
@@ -82,7 +83,7 @@ static void UpdateMessageOriginInfo(int system_number, int user_number, Type2Mes
 
   if (net.type == network_type_t::ftn) {
     // TODO(rushfan): here's where we should try to get it from the bbslist.
-    if (try_load_nodelist(net)) {
+    if (net.try_load_nodelist()) {
       auto& nl = *net.nodelist;
       auto addr =
           system_number == 0
@@ -102,8 +103,8 @@ static void UpdateMessageOriginInfo(int system_number, int user_number, Type2Mes
       }
       if (nl.contains(addr)) {
         const auto& e = nl.entry(addr);
-        data.from_sys_name = e.name_;
-        data.from_sys_loc = e.location_;
+        data.from_sys_name = e.name();
+        data.from_sys_loc = e.location();
         return;
       }
     }
@@ -206,7 +207,7 @@ void display_message_text(const std::string& text, bool* next) {
       if (bout.ansi_movement_occurred()) {
         bout.clear_ansi_movement_occurred();
         bout.clear_lines_listed();
-        if (a()->localIO()->GetTopLine() && a()->localIO()->GetScreenBottom() == 24) {
+        if (bout.localIO()->GetTopLine() && bout.localIO()->GetScreenBottom() == 24) {
           a()->ClearTopScreenProtection();
         }
       }
@@ -269,7 +270,7 @@ void display_message_text(const std::string& text, bool* next) {
   }
   bout.Color(0);
   bout.nl();
-  if (ansi && a()->localIO()->topdata() != LocalIO::topdata_t::none &&
+  if (ansi && bout.localIO()->topdata() != LocalIO::topdata_t::none &&
       a()->sess().IsUserOnline()) {
     a()->UpdateTopScreen();
   }
@@ -584,7 +585,7 @@ static std::vector<std::string> split_wwiv_message(const std::string& orig_text,
         if (!controlcodes) {
           continue;
         }
-        line = StrCat("|08@", line.substr(2));
+        line = StrCat("|08@", line.substr(2), "|#0");
       } else {
         line = line.substr(2);
       }

@@ -26,7 +26,9 @@
 #include <string>
 #include <vector>
 
-struct net_networks_rec;
+namespace wwiv::sdk::net {
+class Network;
+}
 
 namespace wwiv::sdk::files {
 
@@ -34,7 +36,7 @@ class Tic {
 public:
   explicit Tic(std::filesystem::path path);
   Tic() = delete;
-  ~Tic();
+  ~Tic() = default;
 
   // True if everything is valid (file exists, PW correct, and CRC matches)
   [[nodiscard]] bool IsValid() const;
@@ -83,7 +85,7 @@ private:
 // Helper classes
 
 std::optional<directory_t> FindFileAreaForTic(const files::Dirs& dirs, const Tic& tic,
-                                              const net_networks_rec& net);
+                                              const sdk::net::Network& net);
 
 } 
 

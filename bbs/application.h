@@ -42,7 +42,6 @@ class Batch;
 class BbsMacroContext;
 struct arcrec;
 struct editorrec;
-struct net_networks_rec;
 struct newexternalrec;
 struct tagrec_t;
 struct usersubrec;
@@ -91,6 +90,11 @@ namespace msgapi {
 class MessageApi;
 class WWIVMessageApi;
 } // namespace msgapi
+
+namespace net {
+class Network;
+}
+
 } // namespace sdk
 } // namespace wwiv
 
@@ -147,8 +151,7 @@ public:
   void handle_sysop_key(uint8_t key);
   void tleft(bool check_for_timeout);
   void DisplaySysopWorkingIndicator(bool displayWait);
-  [[nodiscard]] wwiv::common::RemoteIO* remoteIO() const { return comm_.get(); }
-  [[nodiscard]] wwiv::local::io::LocalIO* localIO() const;
+  //[[nodiscard]] wwiv::local::io::LocalIO* localIO() const;
   bool reset_local_io(wwiv::local::io::LocalIO* wlocal_io);
   [[nodiscard]] const std::string& GetAttachmentDirectory() const { return attach_dir_; }
   [[nodiscard]] const std::filesystem::path& netfoss_dir() const { return netfoss_dir_; }
@@ -228,8 +231,8 @@ public:
   [[nodiscard]] const wwiv::sdk::subboard_t& current_sub() const;
   [[nodiscard]] const wwiv::sdk::files::directory_t& current_dir() const;
 
-  [[nodiscard]] const net_networks_rec& current_net() const;
-  [[nodiscard]] net_networks_rec& mutable_current_net();
+  [[nodiscard]] const wwiv::sdk::net::Network& current_net() const;
+  [[nodiscard]] wwiv::sdk::net::Network& mutable_current_net();
 
   [[nodiscard]] bool IsUseInternalZmodem() const { return internal_zmodem_; }
   [[nodiscard]] bool IsUseInternalFsed() const; 
