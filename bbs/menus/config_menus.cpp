@@ -18,6 +18,7 @@
 /**************************************************************************/
 #include "bbs/menus/config_menus.h"
 
+#include "bbs/acs.h"
 #include "bbs/bbs.h"
 #include "bbs/mmkey.h"
 #include "bbs/sysoplog.h"
@@ -31,11 +32,13 @@
 #include "fmt/printf.h"
 #include "sdk/filenames.h"
 #include "sdk/menus/menu.h"
+#include "sdk/menus/menu_set.h"
 
 #include <string>
 
 using namespace wwiv::core;
 using namespace wwiv::sdk;
+using namespace wwiv::sdk::menus;
 using namespace wwiv::strings;
 using namespace wwiv::stl;
 
@@ -46,23 +49,25 @@ static bool ValidateMenuSet(const std::string& menu_set) {
   return File::Exists(FilePath(FilePath(a()->config()->menudir(), menu_set), "main.mnu.json"));
 }
 
-static std::map<int, std::string> ListMenuDirs() {
-  std::map<int, std::string> result;
-  const auto menu_directory = a()->config()->menudir();
-  const MenuDescriptions descriptions(menu_directory);
+static std::map<int, menu_set_t> ListMenuDirs() {
+  std::map<int, menu_set_t> result;
 
   bout.nl();
   bout << "|#1Available Menus Sets" << wwiv::endl
        << "|#9============================" << wwiv::endl;
 
   int num = 1;
+  const auto menu_directory = a()->config()->menudir();
   auto menus = FindFiles(FilePath(menu_directory, "*"), FindFiles::FindFilesType::directories);
 
-  for (const auto& m : menus) {
-    const auto& filename = m.name;
-    const std::string description = descriptions.description(filename);
-    bout.bprintf("|#2#%d |#1%-8.8s |#9%-60.60s\r\n", num, filename, description);
-    result.emplace(num, filename);
+  for (const auto& d : menus) {
+    MenuSet56 m(FilePath(menu_directory, d.name));
+    if (!check_acs(m.menu_set.acs)) {
+      VLOG(1) << "check acs failed for: " << d.name;
+      continue;
+    }
+    bout.format("|#2#{} |#1{:<8.8} |#9{:<60.60}\r\n", num, m.menu_set.name, m.menu_set.description);
+    result.emplace(num, m.menu_set);
     ++num;
   }
   bout.nl();
@@ -70,17 +75,51 @@ static std::map<int, std::string> ListMenuDirs() {
   return result;
 }
 
-void MenuSysopLog(const std::string& msg) {
-  const std::string log_message = StrCat("*MENU* : ", msg);
-  sysoplog() << log_message;
-  bout << log_message << wwiv::endl;
+/**
+ * Sets a menuset to one specified by 'name', returning true on success and
+ * false otherwise.
+ */
+static bool SetMenuSet(const menu_set_t& m) {
+  if (!ValidateMenuSet(m.name)) {
+    return false;
+  }
+
+  if (!check_acs(m.acs)) {
+    return false;
+  }
+
+  a()->user()->set_menu_set(m.name);
+  sysoplog() << fmt::format("Menu in use : {} - {}", a()->user()->menu_set(),
+                           a()->user()->hotkeys() ? "Hot" : "Off");
+  // Save current menu setup.
+  return a()->WriteCurrentUser();
 }
 
-void ConfigUserMenuSet() {
+void ConfigUserMenuSet(const std::string& data) {
+  if (!data.empty() && ValidateMenuSet(data)) {
+    // Try to set the menu based on data first.
+    MenuSet56 m(FilePath(a()->config()->menudir(), data));
+    if (SetMenuSet(m.menu_set)) {
+      // Success at setting the menuset, no need to query the caller.
+      return;
+    }
+  }
+
   bout.cls();
   bout.litebar("Configure Menus");
   bout.printfile(MENUWEL_NOEXT);
   bool done = false;
+
+  const auto r = ListMenuDirs();
+  if (r.size() == 1) {
+    if (const auto m = std::begin(r)->second; ValidateMenuSet(m.name)) {
+      bout << "|#5You are currently using the only available menuset." << wwiv::endl << wwiv::endl;
+      SetMenuSet(m);
+      bout.pausescr();
+      return;
+    }
+  }
+
   while (!done) {
     bout.nl();
     bout << "|#11|#9) Menuset      :|#2 " << a()->user()->menu_set() << wwiv::endl;
@@ -94,26 +133,24 @@ void ConfigUserMenuSet() {
       done = true;
       break;
     case '1': {
-      auto r = ListMenuDirs();
       bout.nl(2);
       bout << "|#9Enter the menu set to use : ";
       auto sel = bin.input_number<int>(1, 1, r.size(), false);
-      if (const auto menuSetName = r.at(sel); ValidateMenuSet(menuSetName)) {
-        MenuDescriptions descriptions(a()->config()->menudir());
+      if (const auto m = r.at(sel); ValidateMenuSet(m.name)) {
         bout.nl();
-        bout << "|#9Menu Set : |#2" << menuSetName << " :  |#1"
-             << descriptions.description(menuSetName) << wwiv::endl;
+        bout.format("|#9Menu Set : |#2{:<8.8} :  |#1{}|#0\r\n", m.name, m.description);
         bout << "|#5Use this menu set? ";
         if (bin.noyes()) {
-          a()->user()->set_menu_set(menuSetName);
+          SetMenuSet(m);
           break;
         }
       }
       bout.nl();
-      bout << "|#6That menu set does not exists, resetting to the default menu set" << wwiv::endl;
+      bout << "|#6That menu set does not exists. Resetting to the default menu set." << wwiv::endl;
       bout.pausescr();
       if (a()->user()->menu_set().empty()) {
-        a()->user()->set_menu_set("wwiv");
+        MenuSet56 wwiv_menu(FilePath(a()->config()->menudir(), "wwiv"));
+        SetMenuSet(wwiv_menu.menu_set);
       }
     } break;
     case '2':
@@ -126,38 +163,7 @@ void ConfigUserMenuSet() {
     bout.cls();
   }
 
-  // Save current menu setup.
-  a()->WriteCurrentUser();
-
-  MenuSysopLog(fmt::format("Menu in use : {} - {}", a()->user()->menu_set(),
-                            a()->user()->hotkeys() ? "Hot" : "Off"));
   bout.nl(2);
-}
-
-
-MenuDescriptions::MenuDescriptions(const std::filesystem::path& menupath) : menupath_(menupath) {
-  TextFile file(FilePath(menupath, DESCRIPT_ION), "rt");
-  if (file.IsOpen()) {
-    std::string s;
-    while (file.ReadLine(&s)) {
-      StringTrim(&s);
-      const auto space = s.find(' ');
-      if (s.empty() || space == std::string::npos) {
-        continue;
-      }
-      descriptions_.emplace(ToStringLowerCase(s.substr(0, space)),
-                            ToStringLowerCase(s.substr(space + 1)));
-    }
-  }
-}
-
-MenuDescriptions::~MenuDescriptions() = default;
-
-std::string MenuDescriptions::description(const std::string& name) const {
-  if (contains(descriptions_, name)) {
-    return descriptions_.at(name);
-  }
-  return "";
 }
 
 } // namespace wwiv

@@ -814,4 +814,22 @@ int Input::nsp() const noexcept { return nsp_; }
 
 void Input::nsp(int n) { nsp_ = n; }
 
+std::optional<ScreenPos> Input::screen_size() {
+  bout.SavePosition();
+  // Use bputs so the local ansi interpretation will work.
+  // This should position it one past the end.
+  bout.bputs("\x1b[999;999H");
+  auto pos = remoteIO()->screen_position();
+  bout.RestorePosition();
+  if (!pos) {
+    return std::nullopt;
+  }
+  if (pos->x < 20 || pos->y < 10) {
+    // If the screensize is less than 20 wide or 10 tall, this seems sus,
+    // so fail to detect it by returning a nullopt.
+    return std::nullopt;
+  }
+  return {ScreenPos{pos->x, pos->y}};
+}
+
 }

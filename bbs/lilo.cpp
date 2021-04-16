@@ -434,6 +434,11 @@ static void FixUserLinesAndColors() {
     a()->user()->color(8, a()->newuser_colors[8]);
     a()->user()->color(9, a()->newuser_colors[9]);
   }
+
+  // Query screen size if mismatch.
+  if (detect_screensize()) {
+    a()->WriteCurrentUser();
+  }
 }
 
 static void UpdateUserStatsForLogin() {
@@ -859,7 +864,6 @@ void logon() {
   a()->sess().SetUserOnline(true);
   write_inst(INST_LOC_LOGON, 0, INST_FLAGS_NONE);
   bout.ResetColors();
-  bout.cls();
 
   FixUserLinesAndColors();
   UpdateUserStatsForLogin();

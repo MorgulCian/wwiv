@@ -38,6 +38,7 @@
 #include "local_io/local_io.h"
 #include "sdk/chains.h"
 #include "sdk/filenames.h"
+#include "sdk/menus/menu_set.h"
 #include "wwivfsed/fsedconfig.h"
 
 #include <cstdlib>
@@ -66,7 +67,7 @@ FsedContext::FsedContext(local::io::LocalIO* local_io)
 FsedApplication::FsedApplication(std::unique_ptr<FsedConfig> config)
     : config_(std::move(config)), 
       local_io_(config_->CreateLocalIO()), 
-      remote_io_(config_->CreateRemoteIO()), 
+      remote_io_(config_->CreateRemoteIO(local_io_.get())), 
       context_(local_io_.get()),
       fake_macro_context_(&context_) {
   bout.SetLocalIO(local_io_.get());

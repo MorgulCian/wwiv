@@ -213,6 +213,11 @@ public:
   template <typename T>
   T input_number(T current_value, int64_t min_value = std::numeric_limits<T>::min(),
                  int64_t max_value = std::numeric_limits<T>::max(), bool set_default_value = true) {
+    if (current_value < min_value) {
+      current_value = static_cast<T>(min_value);
+    } else if (current_value > max_value) {
+      current_value = static_cast<T>(max_value);
+    }
     auto r =
         bin.input_number_or_key_raw(current_value, min_value, max_value, set_default_value, {'Q'});
     return (r.key != 0) ? current_value : static_cast<T>(r.num);
@@ -228,6 +233,13 @@ public:
     wwiv::common::input_result_t<T> r{static_cast<T>(orig.num), orig.key};
     return r;
   }
+
+  /**
+   * Returns the screen size as a coordnate (x, y) denoting the position
+   * of the lower right corner.
+   */
+  std::optional<ScreenPos> screen_size();
+
 
   //
   // Check for Abort
@@ -255,6 +267,7 @@ private:
   int bgetch_handle_key_translation(int key, numlock_status_t numlock_mode);
   // used by bgetch_event
   int bgetch_handle_escape(int key);
+
 
 private:
   local::io::LocalIO* local_io_{nullptr};

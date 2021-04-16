@@ -14,40 +14,49 @@
 /*    "AS IS"  BASIS, WITHOUT  WARRANTIES  OR  CONDITIONS OF ANY  KIND,   */
 /*    either  express  or implied.  See  the  License for  the specific   */
 /*    language governing permissions and limitations under the License.   */
+/*                                                                        */
 /**************************************************************************/
-#ifndef INCLUDED_BBS_NEWUSER_H
-#define INCLUDED_BBS_NEWUSER_H
+#ifndef INCLUDED_SDK_MENUS_MENU_SET_H
+#define INCLUDED_SDK_MENUS_MENU_SET_H
 
-#include "sdk/user.h"
-
+#include "core/stl.h"
+#include "sdk/menus/menu.h"
+#include <map>
 #include <string>
 
-void input_phone();
-void input_dataphone();
-void input_name();
-void input_realname();
-bool valid_phone(const std::string& phoneNumber);
-void input_street();
-void input_city();
-void input_state();
-void input_country();
-void input_zipcode();
-void input_sex();
-void input_age(wwiv::sdk::User* u);
-void input_comptype();
-/**
- * detects the screensize and returns true if the caller accepted the 
- * new size.  The userrecord will be updated by the function.
- * 
- */
-bool detect_screensize();
-void input_screensize();
-void input_pw(wwiv::sdk::User* u);
-void input_ansistat();
-void input_callsign();
-void newuser();
+namespace wwiv::sdk::menus {
 
 
+class MenuDescriptions {
+public:
+  explicit MenuDescriptions(const std::filesystem::path& menupath);
+  ~MenuDescriptions();
+  [[nodiscard]] std::string description(const std::string& name) const;
 
+private:
+  const std::filesystem::path menupath_;
+  std::map<std::string, std::string, wwiv::stl::ci_less> descriptions_;
+};
+
+class MenuSet56 final {
+public:
+  explicit MenuSet56(std::filesystem::path dir);
+  MenuSet56& operator=(const MenuSet56&);
+  /** Creates a dummy menuset */
+  MenuSet56();
+  ~MenuSet56();
+  [[nodiscard]] bool Load();
+  [[nodiscard]] bool Save();
+  [[nodiscard]] bool initialized() const noexcept { return initialized_; }
+  void set_initialized(bool i) { initialized_ = i; }
+
+  menu_set_t menu_set{};
+  const std::filesystem::path& menuset_dir() const noexcept { return menuset_dir_;  }
+
+private:
+  std::filesystem::path menuset_dir_;
+  bool initialized_{false};
+};
+}  // namespace
 
 #endif

@@ -389,6 +389,45 @@ void RemoteSocketIO::set_binary_mode(bool b) {
   skip_next_ = false;
 }
 
+std::optional<ScreenPos> RemoteSocketIO::screen_position() { 
+  // Clear inbound
+  while (incoming()) {
+    getW();
+  }
+
+  write("\x1b[6n", 4);
+
+  const auto now = std::chrono::steady_clock::now();
+  auto l = now + std::chrono::seconds(3);
+
+  std::string dsr_response;
+  while (std::chrono::steady_clock::now() < l && connected()) {
+    auto ch = getW();
+    if (ch == '\x1b') {
+      l = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+      while (std::chrono::steady_clock::now() < l && connected()) {
+        ch = getW();
+        if (ch) {
+          if (isdigit(ch) || ch == ';') {
+            dsr_response.push_back(ch);
+          }
+          if (ch == 'R') {
+            VLOG(1) << "RemoteSocketIO::screen_position(): DSR: " << dsr_response;
+            if (auto idx = dsr_response.find(';'); idx != std::string::npos) {
+              auto y = to_number<int>(dsr_response.substr(0, idx));
+              auto x = to_number<int>(dsr_response.substr(idx+1));
+              return {ScreenPos{x, y}};
+            }
+            return std::nullopt;
+          }
+        }
+      }
+      return std::nullopt;
+    }
+  }
+  return std::nullopt;
+}
+
 void RemoteSocketIO::HandleTelnetIAC(unsigned char nCmd, unsigned char nParam) {
   // We should probably start responding to the DO and DONT options....
   switch (nCmd) {

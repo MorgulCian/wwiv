@@ -20,6 +20,7 @@
 #ifndef INCLUDED_COMMON_REMOTE_IO_H
 #define INCLUDED_COMMON_REMOTE_IO_H
 
+#include <optional>
 #include <string>
 
 namespace wwiv::common {
@@ -46,6 +47,12 @@ public:
   std::string username;
   std::string password;
 };
+
+struct ScreenPos {
+  int x{0};
+  int y{0};
+};
+
 /**
  * Base Communication Class.
  */
@@ -72,6 +79,8 @@ class RemoteIO {
   [[nodiscard]] bool binary_mode() const { return binary_mode_; }
 
   virtual RemoteInfo& remote_info() { return remote_info_; }
+
+  virtual std::optional<ScreenPos> screen_position();
 
 protected:
   bool binary_mode_{false};

@@ -26,23 +26,8 @@
 
 namespace wwiv::bbs::menus {
 
-
-class MenuDescriptions {
-public:
-  explicit MenuDescriptions(const std::filesystem::path& menupath);
-  ~MenuDescriptions();
-  [[nodiscard]] std::string description(const std::string& name) const;
-
-private:
-  const std::filesystem::path menupath_;
-  std::map<std::string, std::string, wwiv::stl::ci_less> descriptions_;
-};
-
-// Functions used b bbs.cpp and defaults.cpp
-void ConfigUserMenuSet();
-
-// Functions used by menu-edit and menu
-void MenuSysopLog(const std::string& pszMsg);
+// Functions used bbs.cpp and defaults.cpp
+void ConfigUserMenuSet(const std::string& data);
 
 }  // namespace
 

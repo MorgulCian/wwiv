@@ -319,40 +319,22 @@ bool sysop2() {
 
 // Returns 1 if ANSI detected, or if local user, else returns 0. Uses the
 // cursor position interrogation ANSI sequence for remote detection.
-// If the user is asked and choose NO, then -1 is returned.
 int check_ansi() {
   if (!a()->sess().incom()) {
     return 1;
   }
 
-  while (bin.bkbhitraw()) {
-    bin.bgetchraw();
+  if (const auto o = bin.screen_size()) {
+    const auto& ss = o.value();
+    VLOG(1) << "Screen size: x: " << ss.x << "; y: " << ss.y;
+  } else {
+    LOG(WARNING) << "Unable to get screen size from terminal.";
   }
 
-  bout.rputs("\x1b[6n");
-  const auto now = steady_clock::now();
-  auto l = now + seconds(3);
-
-  while (steady_clock::now() < l) {
-    a()->CheckForHangup();
-    auto ch = bin.bgetchraw();
-    if (ch == '\x1b') {
-      l = steady_clock::now() + seconds(1);
-      while (steady_clock::now() < l) {
-        a()->CheckForHangup();
-        ch = bin.bgetchraw();
-        if (ch) {
-          if ((ch < '0' || ch > '9') && ch != ';' && ch != '[') {
-            return 1;
-          }
-        }
-      }
-      return 1;
-    }
-    if (ch == 'N') {
-      return -1;
-    }
+  if (const auto pos = bin.remoteIO()->screen_position()) {
+    return 1;
   }
+
   return 0;
 }
 

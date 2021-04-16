@@ -87,16 +87,16 @@ LocalIO* FsedConfig::CreateLocalIO() const {
 #else
     if (local_) {
       CursesIO::Init(fmt::sprintf("WWIVfsed %s", full_version()));
-      return new CursesLocalIO(curses_out->GetMaxY());
+      return new CursesLocalIO(curses_out->GetMaxY(), curses_out->GetMaxX());
     }
 #endif
   }
   return new NullLocalIO();
 }
 
-RemoteIO* FsedConfig::CreateRemoteIO() const {
+RemoteIO* FsedConfig::CreateRemoteIO(local::io::LocalIO* local_io) const {
   if (local_) {
-    return new NullRemoteIO();
+    return new NullRemoteIO(local_io);
   }
   return new RemoteSocketIO(socket_handle_, false);
 }

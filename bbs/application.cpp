@@ -80,6 +80,7 @@
 #include "sdk/user.h"
 #include "sdk/usermanager.h"
 #include "sdk/files/files.h"
+#include "sdk/menus/menu_set.h"
 #include "sdk/msgapi/message_api_wwiv.h"
 #include "sdk/net/networks.h"
 #include <algorithm>
@@ -241,10 +242,10 @@ void Application::CreateComm(unsigned int nHandle, CommunicationType type) {
     comm_ = std::make_unique<RemoteSocketIO>(nHandle, true);
   } break;
   case CommunicationType::NONE: {
-    comm_ = std::make_unique<NullRemoteIO>();
+    comm_ = std::make_unique<wwiv::common::NullRemoteIO>(local_io_.get());
   } break;
   case CommunicationType::STDIO:
-    comm_ = std::make_unique<NullRemoteIO>();
+    comm_ = std::make_unique<wwiv::common::NullRemoteIO>(local_io_.get());
     break;
   }
   bout.SetComm(comm_.get());
@@ -269,10 +270,9 @@ bool Application::ReadCurrentUser(int user_number) {
   }
   last_read_user_number_ = user_number;
   // Update all other session variables that are dependent.
-  sess().current_menu_set(user()->menu_set());
+  sess().load_menu_set(config_->menudir(), user()->menu_set());
   sess().num_screen_lines(sess().using_modem() ? user()->screen_lines()
                                           : bout.localIO()->GetDefaultScreenBottom() + 1);
-  sess().dirs().current_menu_directory(FilePath(config_->menudir(), user()->menu_set()));
   return true;
 }
 
@@ -293,8 +293,7 @@ bool Application::WriteCurrentUser(int user_number) {
                << "; last_read_user_number_: " << last_read_user_number_;
   }
   // Update any possibly changed session variables.
-  sess().current_menu_set(user()->menu_set());
-  sess().dirs().current_menu_directory(FilePath(config_->menudir(), user()->menu_set()));
+  sess().load_menu_set(config_->menudir(), user()->menu_set());
   return users()->writeuser(user(), user_number);
 }
 
@@ -892,7 +891,8 @@ int Application::Run(int argc, char* argv[]) {
       // and also not passed in from the telnet handler, etc.  On Windows
       // We always have a local console, so this is *NIX specific.
       wwiv::local::ui::CursesIO::Init(fmt::sprintf("WWIV BBS %s", full_version()));
-      reset_local_io(new CursesLocalIO(wwiv::local::ui::curses_out->GetMaxY()));
+      reset_local_io(new CursesLocalIO(wwiv::local::ui::curses_out->GetMaxY(), 
+                                       wwiv::local::ui::curses_out->GetMaxX()));
     } else if (type == CommunicationType::TELNET || type == CommunicationType::SSH) {
       reset_local_io(new NullLocalIO());
     }

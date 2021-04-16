@@ -117,6 +117,8 @@ struct menu_rec_430_t {
 
 namespace wwiv::sdk::menus {
 
+class MenuSet56;
+
 class Menu430 {
 public:
   Menu430(std::filesystem::path menu_dir, std::string menu_set,
@@ -213,9 +215,23 @@ struct menu_56_t {
   std::vector<menu_item_56_t> items;
 };
 
+/**
+ * Represents a menuset, which is a collection of menus.
+ */
+struct menu_set_t {
+  // Name of this menuset
+  std::string name;
+  // Description of this menuset.
+  std::string description;
+  // ACS needed to use this menuset.
+  std::string acs;
+  // Global menu items. These will be available in every menu in this menuset.
+  std::vector<menu_item_56_t> items;
+};
+
 class Menu56 {
 public:
-  Menu56(std::filesystem::path menu_dir, std::string menu_set,
+  Menu56(std::filesystem::path menu_dir, const MenuSet56& menu_set,
           std::string menu_name);
   [[nodiscard]] bool Load();
   [[nodiscard]] bool Save();

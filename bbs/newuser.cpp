@@ -375,12 +375,32 @@ void input_comptype() {
   }
 }
 
+bool detect_screensize() { 
+  if (const auto sso = bin.screen_size()) {
+    const auto& ss = sso.value();
+    if (ss.x != a()->user()->screen_width() || ss.y != a()->user()->screen_lines()) {
+      bout.format("|#9Screen size of |#2{}|#9x|#2{} |#9detected.  Use it?", ss.x, ss.y);
+      if (bin.noyes()) {
+        a()->user()->screen_width(ss.x);
+        a()->user()->screen_lines(ss.y);
+        a()->sess().num_screen_lines(ss.y);
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 void input_screensize() {
+  if (detect_screensize()) {
+    return;
+  }
+
   bout.nl();
-  bout << "|#9How wide is your screen? (|#2<CR>|#9=|#180|#9): ";
-  const auto x = bin.input_number(80, 32, 80, true);
-  bout << "|#9How tall is your screen? (|#2<CR>|#9=|#124|#9): ";
-  const auto y = bin.input_number(24, 8, 60, true);
+  bout << "|#9How wide is your screen : ";
+  const auto x = bin.input_number(a()->user()->screen_width(), 40, 160, true);
+  bout << "|#9How tall is your screen : ";
+  const auto y = bin.input_number(a()->user()->screen_lines(), 20, 100, true);
   a()->user()->screen_width(x);
   a()->user()->screen_lines(y);
   a()->sess().num_screen_lines(y);
