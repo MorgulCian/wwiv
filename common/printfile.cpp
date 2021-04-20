@@ -18,7 +18,6 @@
 /**************************************************************************/
 #include "common/printfile.h"
 
-
 #include "common/input.h"
 #include "common/menus/menu_data_util.h"
 #include "core/file.h"
@@ -29,6 +28,7 @@
 #include "core/textfile.h"
 #include "local_io/keycodes.h"
 #include <chrono>
+#include <regex>
 #include <string>
 #include <vector>
 
@@ -41,9 +41,42 @@ using namespace wwiv::sdk;
 using namespace wwiv::stl;
 using namespace wwiv::strings;
 
-/**
- * Creates the fully qualified filename to display adding extensions and directories as needed.
- */
+std::filesystem::path CreateFullPathToPrintWithCols(const std::filesystem::path& filename,
+                                                    int screen_length) {
+  // this shouldn't happen but let's warn about it
+  if (filename.empty() || !File::Exists(filename)) {
+    LOG(WARNING) << "CreateFullPathToPrintWithCols: filename does not exist: "
+                 << filename.u8string();
+    return filename;
+  }
+
+  const auto base = filename.stem();
+  const auto ext = filename.extension();
+  const auto dir = filename.parent_path();
+
+  const std::regex pieces_regex(fmt::format("{}\\.(\\d+)\\{}", filename.stem().u8string(), ext.u8string()));
+  std::smatch pieces_match;
+  std::map<int, std::filesystem::path> col_fn_map;
+  for (const auto f : std::filesystem::directory_iterator(dir)) {
+    auto fname = f.path().filename().u8string();
+    if (std::regex_match(fname, pieces_match, pieces_regex)) {
+      col_fn_map[wwiv::strings::to_number<int>(pieces_match[1].str())] = f.path();
+    }
+  }
+
+  // be explicit that we need this to be non-empty.
+  if (col_fn_map.empty()) {
+    return filename;
+  }
+
+  for (auto it = std::rbegin(col_fn_map); it != std::rend(col_fn_map); it++) {
+    if (it->first <= screen_length) {
+      return it->second;
+    }
+  }
+  return filename;
+}
+
 std::filesystem::path CreateFullPathToPrint(const std::vector<std::filesystem::path>& dirs,
                                             const User& user, const std::string& basename) {
   for (const auto& base : dirs) {
@@ -62,19 +95,19 @@ std::filesystem::path CreateFullPathToPrint(const std::vector<std::filesystem::p
         // ANSI and color
         candidate.replace_extension(".ans");
         if (File::Exists(candidate)) {
-          return candidate;
+          return CreateFullPathToPrintWithCols(candidate, user.screen_width());
         }
       }
       // ANSI.
       candidate.replace_extension(".b&w");
       if (File::Exists(candidate)) {
-        return candidate;
+        return CreateFullPathToPrintWithCols(candidate, user.screen_width());
       }
     }
     // ANSI/Color optional
     candidate.replace_extension(".msg");
     if (File::Exists(candidate)) {
-      return candidate;
+      return CreateFullPathToPrintWithCols(candidate, user.screen_width());
     }
   }
   // Nothing matched, return the input.

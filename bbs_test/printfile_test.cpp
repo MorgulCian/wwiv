@@ -22,17 +22,21 @@
 #include "common/output.h"
 #include "common/printfile.h"
 #include "core/file.h"
+#include "core/strings.h"
 #include "core_test/file_helper.h"
+#include <regex>
 #include <string>
 
 using wwiv::sdk::User;
 using namespace wwiv::common;
 using namespace wwiv::core;
+using namespace wwiv::strings;
 
 class PrintFileTest : public ::testing::Test {
 protected:
   void SetUp() override { 
     helper.SetUp(); 
+    helper.user()->screen_width(80);
     const auto lang = FilePath(helper.files().TempDir(), "en/gfiles");
     const auto gfiles = FilePath(helper.files().TempDir(), "gfiles");
     dirs.push_back(lang);
@@ -107,4 +111,38 @@ TEST_F(PrintFileTest, FullyQualified) {
   const auto expected = CreateTempFile("gfiles/one.ans");
   const auto actual = CreateFullPathToPrint(expected.string());
   EXPECT_EQ(expected, actual);
+}
+
+TEST_F(PrintFileTest, WithCols) {
+  const auto base_ans = CreateTempFile("gfiles/one.msg");
+  const auto expected_msg = CreateTempFile("gfiles/one.80.msg");
+  const auto msg120 = CreateTempFile("gfiles/one.120.msg");
+  const auto msg132 = CreateTempFile("gfiles/one.132.msg");
+  const auto msg40 = CreateTempFile("gfiles/one.40.msg");
+
+  const auto actual_msg = CreateFullPathToPrintWithCols(base_ans, 80);
+  EXPECT_EQ(expected_msg, actual_msg);
+}
+
+TEST_F(PrintFileTest, WithCols_None) {
+  const auto expected_msg = CreateTempFile("gfiles/one.msg");
+  const auto msg100 = CreateTempFile("gfiles/one.100.msg");
+  const auto msg120 = CreateTempFile("gfiles/one.120.msg");
+  const auto msg132 = CreateTempFile("gfiles/one.132.msg");
+
+  const auto actual_msg = CreateFullPathToPrintWithCols(expected_msg, 80);
+  EXPECT_EQ(expected_msg, actual_msg);
+}
+
+TEST_F(PrintFileTest, GFilesOnly_WithCols) {
+  const auto msg132 = CreateTempFile("gfiles/one.132.msg");
+  const auto base_msg = CreateTempFile("gfiles/one.msg");
+
+  helper.user()->screen_width(132);
+  const auto actual_msg = CreateFullPathToPrint("one");
+  EXPECT_EQ(msg132, actual_msg);
+
+  helper.user()->screen_width(80);
+  const auto actual_bw = CreateFullPathToPrint("one");
+  EXPECT_EQ(base_msg, actual_bw);
 }
